@@ -40,40 +40,7 @@ def plot_image(name):
     plt.imshow(image)
 
 
-# ## DO THIS ONLY ONCE -- DOWNLOADING GPT MODEL
-# model = '124M'
-# import requests
-# subdir = os.path.join('models', model)
-# if not os.path.exists(subdir):
-#     os.makedirs(subdir)
-# subdir = subdir.replace('\\','/') # needed for Windows
-# 
-# for filename in ['checkpoint','encoder.json','hparams.json','model.ckpt.data-00000-of-00001', 'model.ckpt.index', 'model.ckpt.meta', 'vocab.bpe']:
-# 
-#     r = requests.get("https://storage.googleapis.com/gpt-2/" + subdir + "/" + filename, stream=True)
-# 
-#     with open(os.path.join(subdir, filename), 'wb') as f:
-#         file_size = int(r.headers["content-length"])
-#         chunk_size = 1000
-#         with tqdm(ncols=100, desc="Fetching " + filename, total=file_size, unit_scale=True) as pbar:
-#             # 1k for chunk_size, since Ethernet packet size is around 1500 bytes
-#             for chunk in r.iter_content(chunk_size=chunk_size):
-#                 f.write(chunk)
-#                 pbar.update(chunk_size)
-
-# ## Read from npy
-# from StringIO import StringIO
-# import tensorflow as tf
-# import numpy as np
-# from tensorflow.python.lib.io import file_io
-# 
-# #Create a variable initialized to the value of a serialized numpy array
-# f = StringIO(file_io.read_file_to_string('gs://my-bucket/123.npy'))
-
 # ## Reading captions and image paths
-
-# In[4]:
-
 
 # Import the Google Cloud client library and JSON library
 from google.cloud import storage
@@ -87,20 +54,9 @@ blob = bucket.blob('coco/annotations/captions_train2014.json')
 # Download the contents of the blob as a string and then parse it using json.loads() method
 annotations = json.loads(blob.download_as_string(client=None))
 
-
-# In[5]:
-
-
 image_gcs_path = "gs://dataset_collection/coco/train2014/"
 
-
-# In[6]:
-
-
 npy_files_path = "/home/jupyter/image_npy/"
-
-
-# In[7]:
 
 
 # Store captions and image names in vectors
@@ -161,13 +117,13 @@ image_features_extract_model = tf.keras.Model(new_input, hidden_layer)
 # In[10]:
 
 
-# # Get unique images
-# encode_train = sorted(set(img_name_vector))
+# Get unique images
+encode_train = sorted(set(img_name_vector))
 
-# # Feel free to change batch_size according to your system configuration
-# image_dataset = tf.data.Dataset.from_tensor_slices(encode_train)
-# image_dataset = image_dataset.map(
-#   load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(8)
+# Feel free to change batch_size according to your system configuration
+image_dataset = tf.data.Dataset.from_tensor_slices(encode_train)
+image_dataset = image_dataset.map(
+  load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(8)
 
 
 # In[11]:
@@ -179,21 +135,16 @@ from tensorflow.python.lib.io import file_io
 # In[12]:
 
 
-# total_imgs = int(len(encode_train)/8)+1
-# for img, path in tqdm(image_dataset,to`tal=total_imgs):
-#     batch_features = image_features_extract_model(img)
-#     batch_features = tf.reshape(batch_features,
-#                               (batch_features.shape[0], -1, batch_features.shape[3]))
+total_imgs = int(len(encode_train)/8)+1
+for img, path in tqdm(image_dataset,to`tal=total_imgs):
+    batch_features = image_features_extract_model(img)
+    batch_features = tf.reshape(batch_features,
+                              (batch_features.shape[0], -1, batch_features.shape[3]))
   
     
-#     for bf, p in zip(batch_features, path):
-#         path_of_feature = p.numpy().decode("utf-8")
-#         np.save(npy_files_path+path_of_feature, bf.numpy())
-
-
-# ## image_npy/eprocessing captions
-
-# In[13]:
+    for bf, p in zip(batch_features, path):
+        path_of_feature = p.numpy().decode("utf-8")
+        np.save(npy_files_path+path_of_feature, bf.numpy())
 
 
 def to_vocabulary(captions):
